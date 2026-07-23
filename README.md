@@ -4,6 +4,7 @@
 > Write your app idea in Python or drag widgets on a phone. One Python script generates a **100% native Jetpack Compose (Kotlin + Material 3)** Android Studio project and can auto-compile it to APK.
 
 **No Java boilerplate. No XML layouts. Just Python as the catalyst.**
+![Drag and Drop Editor](images/editor-screenshot.png)
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![Kotlin](https://img.shields.io/badge/Kotlin-1.9.10-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org)
