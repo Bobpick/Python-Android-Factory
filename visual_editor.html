@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Android Drag & Drop Builder - Python Catalyst</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Roboto, sans-serif;}
+  body{display:flex;height:100vh;background:#0f0f12;color:#e6e6e6;overflow:hidden;}
+  .sidebar{width:300px;background:#18181c;border-right:1px solid #2a2a30;display:flex;flex-direction:column;padding:16px;overflow-y:auto;}
+  .main{flex:1;display:flex;flex-direction:column;background:#0f0f12;}
+  .topbar{height:56px;background:#18181c;border-bottom:1px solid #2a2a30;display:flex;align-items:center;justify-content:space-between;padding:0 20px;}
+  .canvas-area{flex:1;display:flex;justify-content:center;align-items:flex-start;padding:24px;overflow:auto;gap:24px;}
+  .properties{width:340px;background:#18181c;border-left:1px solid #2a2a30;padding:16px;overflow-y:auto;}
+  .logo{font-weight:800;font-size:16px;letter-spacing:-0.5px;}
+  .logo span{color:#7c3aed;}
+  .btn{background:#7c3aed;color:white;border:none;padding:10px 18px;border-radius:8px;font-weight:600;cursor:pointer;transition:.2s;}
+  .btn:hover{background:#6d28d9;transform:translateY(-1px);}
+  .btn-secondary{background:#27272a;color:#e6e6e6;}
+  .btn-secondary:hover{background:#3f3f46;}
+  .btn-sm{padding:6px 12px;font-size:12px;}
+  .palette-title{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#71717a;margin:16px 0 8px;font-weight:700;}
+  .widget-item{background:#27272a;border:1px solid #3f3f46;border-radius:10px;padding:12px; margin-bottom:8px;cursor:grab;display:flex;align-items:center;gap:10px;transition:.15s;user-select:none;}
+  .widget-item:active{cursor:grabbing;transform:scale(.97);}
+  .widget-item:hover{border-color:#7c3aed;background:#2a2a4a;}
+  .w-icon{width:32px;height:32px;background:#3f3f46;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+  .phone-frame{width:380px;min-height:760px;background:#000;border-radius:32px;padding:12px;box-shadow:0 20px 60px rgba(0,0,0,.6), inset 0 0 0 2px #3f3f46;position:relative;}
+  .phone-notch{width:120px;height:24px;background:#000;border-radius:0 0 16px 16px;position:absolute;top:0;left:50%;transform:translateX(-50%);z-index:10;}
+  .phone-screen{width:100%;height:736px;background:white;border-radius:24px;overflow:hidden;position:relative;display:flex;flex-direction:column;}
+  .screen-toolbar{height:48px;background:#f4f4f5;display:flex;align-items:center;justify-content:space-between;padding:0 16px;color:#18181b;font-weight:600;font-size:14px;border-bottom:1px solid #e4e4e7;}
+  .screen-content{flex:1;overflow-y:auto;padding:16px;background:#ffffff;position:relative;min-height:600px;}
+  .screen-content.drag-over{background:#f5f3ff;outline:2px dashed #7c3aed;outline-offset:-2px;}
+  .dropped-widget{border:1px solid transparent;border-radius:8px;padding:8px;margin-bottom:12px;position:relative;transition:.15s;cursor:pointer;background:white;}
+  .dropped-widget:hover{border-color:#e4e4e7;background:#fafafa;}
+  .dropped-widget.selected{border-color:#7c3aed;background:#f5f3ff;box-shadow:0 0 0 2px rgba(124,58,237,.2);}
+  .dropped-widget .delete-btn{position:absolute;top:-8px;right:-8px;width:22px;height:22px;background:#ef4444;color:white;border-radius:50%;border:none;cursor:pointer;display:none;font-size:12px;}
+  .dropped-widget.selected .delete-btn{display:block;}
+  /* preview styles */
+  .preview-text{color:#18181b;text-align:center;padding:8px;font-size:18px;}
+  .preview-btn{background:#7c3aed;color:white;border:none;padding:12px 24px;border-radius:8px;width:100%;font-weight:600;cursor:pointer;}
+  .preview-input{width:100%;padding:12px;border:1px solid #e4e4e7;border-radius:8px;font-size:14px;}
+  .preview-img{width:120px;height:120px;background:#f4f4f5;border-radius:12px;margin:0 auto;display:flex;align-items:center;justify-content:center;color:#71717a;}
+  .prop-group{margin-bottom:20px;}
+  .prop-label{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:#a1a1aa;margin-bottom:6px;font-weight:600;display:block;}
+  .prop-input{width:100%;background:#27272a;border:1px solid #3f3f46;border-radius:8px;padding:10px 12px;color:#e6e6e6;font-size:13px;}
+  .prop-input:focus{border-color:#7c3aed;outline:none;}
+  .tabs{display:flex;gap:8px;margin-bottom:16px;}
+  .tab{padding:8px 14px;border-radius:20px;background:#27272a;font-size:13px;cursor:pointer;border:1px solid transparent;}
+  .tab.active{background:#7c3aed;color:white;}
+  .empty-state{color:#71717a;text-align:center;padding:40px 20px;border:1px dashed #3f3f46;border-radius:12px;margin-top:20px;}
+  .badge{background:#27272a;padding:2px 8px;border-radius:10px;font-size:10px;color:#a1a1aa;margin-left:auto;}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="logo">PYTHON <span>ANDROID</span> FACTORY</div>
+  <div style="font-size:12px;color:#71717a;margin:4px 0 16px">Drag widgets to phone → Export</div>
+  
+  <div class="palette-title">App Settings</div>
+  <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
+    <input id="appName" class="prop-input" placeholder="App Name" value="My First App">
+    <input id="packageName" class="prop-input" placeholder="com.eugene.myapp" value="com.eugene.myfirstapp">
+    <div style="display:flex;gap:8px"><input id="primaryColor" type="color" value="#6200EE" style="width:40px;height:38px;border-radius:8px;border:1px solid #3f3f46;background:#27272a"/><span style="font-size:12px;color:#71717a;line-height:38px">Primary Color</span></div>
+  </div>
+
+  <div class="palette-title">Widgets - Drag to Phone</div>
+  <div class="widget-item" draggable="true" data-type="TextView"><div class="w-icon">T</div><div><div style="font-weight:600;font-size:13px">Text Label</div><div style="font-size:11px;color:#a1a1aa">Display text</div></div><span class="badge">TEXT</span></div>
+  <div class="widget-item" draggable="true" data-type="Button"><div class="w-icon">◫</div><div><div style="font-weight:600;font-size:13px">Button</div><div style="font-size:11px;color:#a1a1aa">Click action</div></div><span class="badge">BTN</span></div>
+  <div class="widget-item" draggable="true" data-type="EditText"><div class="w-icon">⌨</div><div><div style="font-weight:600;font-size:13px">Text Input</div><div style="font-size:11px;color:#a1a1aa">User input</div></div><span class="badge">INPUT</span></div>
+  <div class="widget-item" draggable="true" data-type="ImageView"><div class="w-icon">🖼</div><div><div style="font-weight:600;font-size:13px">Image</div><div style="font-size:11px;color:#a1a1aa">Image view</div></div><span class="badge">IMG</span></div>
+  <div class="widget-item" draggable="true" data-type="Switch"><div class="w-icon">◉</div><div><div style="font-weight:600;font-size:13px">Switch</div><div style="font-size:11px;color:#a1a1aa">Toggle</div></div><span class="badge">SWITCH</span></div>
+  <div class="widget-item" draggable="true" data-type="Spacer"><div class="w-icon">↕</div><div><div style="font-weight:600;font-size:13px">Spacer</div><div style="font-size:11px;color:#a1a1aa">Empty space</div></div><span class="badge">SPACE</span></div>
+
+  <div style="margin-top:auto;padding-top:16px;display:flex;flex-direction:column;gap:8px">
+    <button class="btn" onclick="exportAndBuild()">💾 Save & Auto-Build APK</button>
+    <button class="btn btn-secondary" onclick="downloadJSON()">⬇ Download spec.json</button>
+    <div style="font-size:11px;color:#52525b;text-align:center">JSON feeds builder.py --spec</div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="font-weight:700">Editor</div>
+      <div class="tabs" id="screenTabs"></div>
+      <button class="btn btn-secondary btn-sm" onclick="addScreen()">+ Screen</button>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span id="buildStatus" style="font-size:12px;color:#a1a1aa"></span>
+      <button class="btn btn-secondary btn-sm" onclick="clearScreen()">Clear</button>
+    </div>
+  </div>
+  <div class="canvas-area">
+    <div class="phone-frame">
+      <div class="phone-notch"></div>
+      <div class="phone-screen">
+        <div class="screen-toolbar"><span id="screenTitle">Home</span><span style="font-size:11px;background:#e4e4e7;padding:2px 8px;border-radius:10px">PREVIEW</span></div>
+        <div class="screen-content" id="screenContent"></div>
+      </div>
+    </div>
+    <div style="width:360px">
+      <div style="background:#18181c;border:1px solid #2a2a30;border-radius:12px;padding:16px">
+        <div style="font-weight:700;margin-bottom:12px">Live JSON Spec</div>
+        <pre id="jsonPreview" style="font-size:11px;color:#a1a1aa;white-space:pre-wrap;max-height:480px;overflow:auto;background:#0f0f12;padding:12px;border-radius:8px"></pre>
+      </div>
+      <div style="margin-top:16px;background:#1f1a30;border:1px solid #3a2a60;border-radius:12px;padding:16px">
+        <div style="font-weight:600;font-size:13px;color:#c4b5fd">How it works</div>
+        <div style="font-size:12px;color:#a1a1aa;margin-top:8px;line-height:1.5">
+          1. Drag widgets to phone<br>
+          2. Click widget to edit props<br>
+          3. Click <b>Save & Auto-Build</b> - Python catalyst generates Kotlin + XML and compiles APK<br>
+          4. APK appears in <code>dist/</code>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="properties">
+  <div id="propEmpty" style="text-align:center;padding:40px 10px;color:#52525b">
+    <div style="font-size:32px;margin-bottom:12px">👆</div>
+    <div style="font-weight:600">No widget selected</div>
+    <div style="font-size:12px;margin-top:6px">Click a widget on the phone to edit its properties</div>
+  </div>
+  <div id="propPanel" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><div style="font-weight:800">Properties</div><div id="propType" style="font-size:11px;background:#27272a;padding:4px 8px;border-radius:12px"></div></div>
+    <div id="propFields"></div>
+  </div>
+  
+  <div style="margin-top:24px;border-top:1px solid #2a2a30;padding-top:16px">
+    <div style="font-weight:600;font-size:13px;margin-bottom:8px">Widget List (drag to reorder)</div>
+    <div id="widgetList" style="display:flex;flex-direction:column;gap:6px"></div>
+  </div>
+</div>
+
+<script>
+let config = {
+  app_name: "My First App",
+  package_name: "com.eugene.myfirstapp",
+  version_code: 1,
+  version_name: "1.0",
+  primary_color: "#6200EE",
+  primary_dark_color: "#3700B3",
+  screens: [
+    { name: "Home", activity_name: "MainActivity", layout_name: "activity_main", widgets: [
+      {type:"TextView", id:"welcomeText", text:"Hello from Python!"},
+      {type:"Button", id:"actionButton", text:"Click Me", action:"showToast:Hello Eugene!"},
+      {type:"EditText", id:"nameInput", hint:"Enter your name"}
+    ]},
+    { name:"About", activity_name:"AboutActivity", layout_name:"activity_about", widgets:[
+      {type:"TextView", id:"aboutText", text:"Made with Python Catalyst"},
+      {type:"Button", id:"backBtn", text:"Go Back", action:"finish"}
+    ]}
+  ]
+};
+let activeScreen = 0;
+let selectedWidget = null;
+
+function init(){
+  document.getElementById('appName').addEventListener('input', e=>{config.app_name=e.target.value; render()});
+  document.getElementById('packageName').addEventListener('input', e=>{config.package_name=e.target.value; render()});
+  document.getElementById('primaryColor').addEventListener('input', e=>{config.primary_color=e.target.value; render()});
+  
+  document.querySelectorAll('.widget-item').forEach(el=>{
+    el.addEventListener('dragstart', e=>{
+      e.dataTransfer.setData('widgetType', el.dataset.type);
+    });
+  });
+  const sc = document.getElementById('screenContent');
+  sc.addEventListener('dragover', e=>{e.preventDefault(); sc.classList.add('drag-over')});
+  sc.addEventListener('dragleave', e=>{sc.classList.remove('drag-over')});
+  sc.addEventListener('drop', e=>{
+    e.preventDefault(); sc.classList.remove('drag-over');
+    const type = e.dataTransfer.getData('widgetType');
+    if(type) addWidget(type);
+  });
+  render();
+}
+
+function addWidget(type){
+  const id = type.toLowerCase() + Date.now().toString().slice(-4);
+  const base = {type, id};
+  if(type==="TextView") base.text="New Text";
+  if(type==="Button") {base.text="Button"; base.action="showToast:Clicked!"}
+  if(type==="EditText") base.hint="Enter text";
+  if(type==="ImageView") base.src="icon";
+  if(type==="Switch") base.text="Enable";
+  if(type==="Spacer") base.height="32dp";
+  config.screens[activeScreen].widgets.push(base);
+  selectedWidget = config.screens[activeScreen].widgets.length-1;
+  render();
+}
+
+function render(){
+  // tabs
+  const tabs = document.getElementById('screenTabs');
+  tabs.innerHTML = config.screens.map((s,i)=>`<div class="tab ${i===activeScreen?'active':''}" onclick="switchScreen(${i})">${s.name}</div>`).join('');
+  document.getElementById('screenTitle').textContent = config.screens[activeScreen].name;
+  
+  // phone preview
+  const content = document.getElementById('screenContent');
+  const widgets = config.screens[activeScreen].widgets;
+  if(widgets.length===0){
+    content.innerHTML = `<div class="empty-state">Drop widgets here<br><span style="font-size:11px">Drag from left sidebar</span></div>`;
+  } else {
+    content.innerHTML = widgets.map((w,i)=>{
+      let inner="";
+      if(w.type==="TextView") inner=`<div class="preview-text">${w.text||''}</div>`;
+      if(w.type==="Button") inner=`<button class="preview-btn">${w.text||'Button'}</button>`;
+      if(w.type==="EditText") inner=`<input class="preview-input" placeholder="${w.hint||''}" disabled>`;
+      if(w.type==="ImageView") inner=`<div class="preview-img">🖼 Image</div>`;
+      if(w.type==="Switch") inner=`<div style="display:flex;gap:8px;align-items:center"><input type="checkbox" disabled> ${w.text||''}</div>`;
+      if(w.type==="Spacer") inner=`<div style="height:${parseInt(w.height)||20}px"></div>`;
+      return `<div class="dropped-widget ${i===selectedWidget?'selected':''}" onclick="selectWidget(${i})">${inner}<button class="delete-btn" onclick="event.stopPropagation();deleteWidget(${i})">✕</button></div>`;
+    }).join('');
+  }
+  
+  // widget list
+  document.getElementById('widgetList').innerHTML = widgets.map((w,i)=>`<div style="display:flex;align-items:center;gap:8px;background:${i===selectedWidget?'#2a2a4a':'#27272a'};border:1px solid ${i===selectedWidget?'#7c3aed':'#3f3f46'};padding:8px;border-radius:8px;cursor:pointer" onclick="selectWidget(${i})"><span style="font-size:10px;background:#3f3f46;padding:2px 6px;border-radius:8px">${w.type}</span><span style="font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis">${w.id}</span><span style="cursor:grab">⋮⋮</span></div>`).join('') || '<div style="font-size:11px;color:#52525b">No widgets</div>';
+  
+  // props
+  renderProps();
+  // json
+  document.getElementById('jsonPreview').textContent = JSON.stringify(config, null, 2);
+}
+
+function switchScreen(i){activeScreen=i;selectedWidget=null;render();}
+function addScreen(){
+  const name=prompt("Screen name?","NewScreen")||"NewScreen";
+  const safe=name.replace(/\W/g,'');
+  config.screens.push({name, activity_name:safe+"Activity", layout_name:"activity_"+safe.toLowerCase(), widgets:[]});
+  activeScreen=config.screens.length-1; render();
+}
+function clearScreen(){if(confirm("Clear this screen?")){config.screens[activeScreen].widgets=[];selectedWidget=null;render();}}
+function selectWidget(i){selectedWidget=i;render();}
+function deleteWidget(i){config.screens[activeScreen].widgets.splice(i,1);selectedWidget=null;render();}
+
+function renderProps(){
+  if(selectedWidget===null){document.getElementById('propEmpty').style.display='block';document.getElementById('propPanel').style.display='none';return;}
+  document.getElementById('propEmpty').style.display='none';document.getElementById('propPanel').style.display='block';
+  const w=config.screens[activeScreen].widgets[selectedWidget];
+  document.getElementById('propType').textContent=w.type;
+  let html=`<div class="prop-group"><label class="prop-label">ID</label><input class="prop-input" value="${w.id}" onchange="updateProp('id',this.value)"></div>`;
+  if(w.type==='TextView' || w.type==='Button' || w.type==='Switch'){
+    html+=`<div class="prop-group"><label class="prop-label">Text</label><input class="prop-input" value="${w.text||''}" onchange="updateProp('text',this.value)"></div>`;
+  }
+  if(w.type==='EditText'){
+    html+=`<div class="prop-group"><label class="prop-label">Hint</label><input class="prop-input" value="${w.hint||''}" onchange="updateProp('hint',this.value)"></div>`;
+  }
+  if(w.type==='Button'){
+    html+=`<div class="prop-group"><label class="prop-label">Action</label><select class="prop-input" onchange="updateAction(this.value)">
+      <option value="showToast:Hello!" ${w.action?.startsWith('showToast')?'selected':''}>Show Toast</option>
+      <option value="finish" ${w.action==='finish'?'selected':''}>Go Back / Finish</option>
+      <option value="navigate:AboutActivity" ${w.action?.startsWith('navigate')?'selected':''}>Navigate to Screen</option>
+    </select><input class="prop-input" style="margin-top:8px" value="${w.action||''}" onchange="updateProp('action',this.value)" placeholder="showToast:Message or navigate:Activity"></div>`;
+  }
+  if(w.type==='Spacer'){
+    html+=`<div class="prop-group"><label class="prop-label">Height</label><input class="prop-input" value="${w.height||'20dp'}" onchange="updateProp('height',this.value)"></div>`;
+  }
+  document.getElementById('propFields').innerHTML=html;
+}
+function updateProp(k,v){config.screens[activeScreen].widgets[selectedWidget][k]=v;render();}
+function updateAction(v){updateProp('action',v);}
+
+function downloadJSON(){
+  const blob=new Blob([JSON.stringify(config,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='app_spec.json'; a.click();
+}
+
+async function exportAndBuild(){
+  const status=document.getElementById('buildStatus');
+  status.textContent="Saving..."; 
+  const data=JSON.stringify(config);
+  // Try POST to local server
+  try{
+    const res=await fetch('/api/build',{method:'POST',headers:{'Content-Type':'application/json'},body:data});
+    if(res.ok){
+      const j=await res.json();
+      status.textContent=j.message||"Build started"; 
+      alert(j.message + "\\n\\nProject: " + j.project_path + (j.apk_path ? "\\nAPK: "+j.apk_path : ""));
+      return;
+    }
+  }catch(e){
+    console.log("No server, downloading JSON", e);
+  }
+  // Fallback: download
+  downloadJSON();
+  status.textContent="JSON downloaded. Run: python builder.py --spec app_spec.json --build";
+  alert("Visual editor exported app_spec.json!\\n\\nNow run:\\npython builder.py --spec app_spec.json --output ./MyApp --build");
+}
+
+init();
+</script>
+</body>
+</html>

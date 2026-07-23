@@ -1,0 +1,9 @@
+# No external dependencies required!
+# Everything uses Python stdlib for builder.
+# Visual editor is a single HTML file - no npm.
+
+# Optional, only if you want alternative Python-on-Android approaches:
+# kivy==2.3.0
+# buildozer==1.5.0
+# flet==0.21.0
+# briefcase==0.3.17
